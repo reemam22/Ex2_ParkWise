@@ -1,0 +1,71 @@
+@startuml
+title ParkWise Conveyor State Diagram
+
+[*] --> Off
+
+' ==========================
+' Off State
+' ==========================
+state Off {
+  state "Idle Off" as IdleOff
+  state "Changing Weight" as WeightChange
+  [*] --> IdleOff
+  IdleOff --> WeightChange : Admin change weight
+  WeightChange --> IdleOff : Confirm change
+}
+
+Off --> IntegrityCheck : Turn on\n[weight confirmed]
+
+' ==========================
+' Integrity Check (Parallel)
+' ==========================
+state IntegrityCheck {
+  state "Mechanical Check" as Mechanical {
+    [*] --> MechTesting
+    MechTesting --> MechTesting : 10m elapsed\n/ attempts++
+  }
+  --
+  state "Electronic Check" as Electronic {
+    [*] --> ElecTesting
+    ElecTesting --> ElecTesting : 10m elapsed\n/ attempts++
+  }
+}
+
+IntegrityCheck --> Operational : All Checks Pass\n[within 10m]
+IntegrityCheck --> Paused : [Failure] OR [attempts == 3]\n/ send alert
+
+' ==========================
+' Operational State
+' ==========================
+state Operational {
+  state Idle
+  state Executing {
+    [*] --> Calculating
+    Calculating --> Moving
+  }
+  
+  [*] --> Idle
+  Idle --> Executing : Move Command
+  Executing --> Idle : Task Done
+  
+  --
+  state H <<history>>
+}
+
+' ==========================
+' Global Controls & Pause
+' ==========================
+Operational --> Paused : Pause / Error
+Operational --> Off : Turn off\n[if Idle]
+Executing --> Executing : Turn off\n[ignore]
+
+state Paused {
+  state "In Repair" as Repairing
+  [*] --> Repairing
+}
+
+' Resume logic points to History (H)
+Paused --> IntegrityCheck : Restart\n[if failed in startup]
+Paused --> Operational.H : Restart\n[if failed in operation]
+
+@enduml

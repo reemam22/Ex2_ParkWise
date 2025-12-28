@@ -1,0 +1,166 @@
+@startuml
+skinparam style strictuml
+
+' ============================================================
+' ====================== ENTITY LAYER =========================
+' ============================================================
+
+package "Entity Layer" {
+
+  class ParkingLot <<entity>> {
+    +id : int
+    +name : String
+    +address : String
+    +city : String
+    +availableSpaces : int
+    +currentPriceListID : int
+  }
+
+  class PriceLists <<entity>> {
+    +priceListID : int
+    +source : String
+    +IRS_JSON : text
+    +effectiveYear : int
+    +firstHourPrice : float
+    +additionalHourPrice : float
+    +fullDayPrice : float
+  }
+
+  class ParkingLotPriceHistory <<entity>> {
+    +PLPH_ID : int
+    +lotID : int
+    +priceListID : int
+    +effectiveFrom : date
+    +effectiveTo : date
+  }
+
+  class Vehicle <<entity>> {
+    +id : String
+    +type : String
+    +color : String
+    +size : String
+    +weight : double
+  }
+
+  class Client <<entity>> {
+    +id : int
+    +firstName : String
+    +lastName : String
+    +phone : String
+  }
+
+  class Conveyors <<entity>> {
+    +conveyorID : int
+    +lotID : int
+    +maxWeight : float
+    +currentFloor : int
+    +currentPosX : float
+    +currentPosY : float
+    +status : ConveyorStatus
+    +isBusy : boolean
+    +failedAttempts : int
+  }
+
+  enum ConveyorStatus {
+      OFF
+      CHECKING
+      OPERATIONAL
+      PAUSED
+      FAILED
+  }
+}
+
+' ============================================================
+' ====================== CONTROL LAYER ========================
+' ============================================================
+
+package "Control Layer" {
+
+  class ParkingLotController <<control>> {
+    +getParkingLots()
+    +updateParkingLot(data)
+    +handleArrival(vehicleData)
+    +handleDeparture(vehicleId)
+  }
+
+  class PricingController <<control>> {
+    +importPriceList(parkingLotId, jsonFile)
+    +getPriceHistory(parkingLotId)
+    +getActivePriceList(parkingLotId)
+  }
+
+  class ConveyorController <<control>> {
+    +turnOnAll()
+    +turnOffAll()
+    +restartConveyor(conveyorId)
+    +runIntegrityCheck(conveyorId)
+    +sendMoveCommand(conveyorId, vehicleId)
+  }
+
+  class IntegrityCheckProcess <<control>> {
+    +start()
+    +timeoutRetry()
+    +reportFailure()
+    +reportSuccess()
+  }
+}
+
+' ============================================================
+' ===================== BOUNDARY LAYER ========================
+' ============================================================
+
+package "Boundary Layer" {
+
+  class ParkingLotUI <<boundary>> {
+    +displayParkingLots()
+    +displayParkingLotDetails(lotId)
+    +editParkingLotForm(lotId)
+    +submitParkingLotChanges(formData)
+  }
+
+  class PricingUI <<boundary>> {
+    +showImportPriceListScreen()
+    +uploadPriceListFile(jsonFile)
+    +displayPriceHistory(lotId)
+  }
+
+  class ConveyorAdminUI <<boundary>> {
+    +showConveyorDashboard()
+    +pressTurnOnConveyors()
+    +pressTurnOffConveyors()
+    +pressRestartConveyor(conveyorId)
+    +displayConveyorStatus(conveyorId)
+  }
+}
+
+' ============================================================
+' ======================= RELATIONSHIPS =======================
+' ============================================================
+
+' ---- Boundary → Control ----
+ParkingLotUI --> ParkingLotController
+PricingUI --> PricingController
+ConveyorAdminUI --> ConveyorController
+
+' ---- Control → Entity ----
+ParkingLotController --> ParkingLot
+ParkingLotController --> Vehicle
+ParkingLotController --> Client
+
+PricingController --> PriceLists
+PricingController --> ParkingLot
+PricingController --> ParkingLotPriceHistory
+
+ConveyorController --> Conveyors
+ConveyorController --> IntegrityCheckProcess
+
+IntegrityCheckProcess --> Conveyors
+
+' ---- Entity Relations ----
+ParkingLot "1" o-- "*" ParkingLotPriceHistory : priceHistory
+ParkingLotPriceHistory --> PriceLists : uses
+ParkingLot --> PriceLists : currentPriceList
+
+Client "1" <-- "*" Vehicle : owns
+
+@enduml

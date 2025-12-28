@@ -1,0 +1,11 @@
+{
+  "parkingLots": [
+    {"LotID":1, "LotName":"Lot A", "Address":"123 Main St", "City":"Tel Aviv", "AvailableSpaces":50}
+  ],
+  "clients": [
+    {"ClientID":1, "FirstName":"John", "LastName":"Doe", "MobileNumber":"0501234567"}
+  ],
+  "vehicles": [
+    {"VehicleNumber":"TLV123","ClientID":1, "Type":"Car", "Color":"Blue", "Size":"Medium", "WeightKg":1200.0}
+  ]
+}
